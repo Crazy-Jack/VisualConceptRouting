@@ -82,12 +82,12 @@ class Encoder(nn.Module):
     """
     def __init__(self, out_dim):
         super(Encoder, self).__init__()
-        self.conv0 = nn.Conv2d(3, 64, 5, 1, 2) # [bsz, 64, 64, 3]
+        self.conv0 = nn.Conv2d(3, 64, 5, 1, 2) # [bsz, 3, 64, 64]
         self.lrelu0 = nn.LeakyReLU(0.2)
-        self.block1 = BasicBlockDown(64, 64) # [bsz, 32, 32, 64]
-        self.block2 = ResBlockDown(64, 64 * 2) # [bsz, 16, 16, 64 * 2]
-        self.block3 = BasicBlockDown(64 * 2, 64 * 4) # [bsz, 8, 8, 64 * 4]
-        self.block4 = BasicBlockDown(64 * 4, 64 * 8) # [bsz, 4, 4, 64 * 8]
+        self.block1 = BasicBlockDown(64, 64) # [bsz, 64, 32, 32]
+        self.block2 = ResBlockDown(64, 64 * 2) # [bsz, 64 * 2, 16, 16]
+        self.block3 = BasicBlockDown(64 * 2, 64 * 4) # [bsz, 64 * 4, 8, 8]
+        self.block4 = BasicBlockDown(64 * 4, 64 * 8) # [bsz, 64 * 8, 4, 4]
         self.flat = nn.Flatten()
         self.fc = nn.Linear(4 * 4 * (64 * 8), out_dim) # [bsz, out_dim]
         self.tanh = nn.Tanh()
@@ -162,6 +162,14 @@ class Generator(nn.Module):
         x = self.tanh7(self.conv2d7(x)) # [bsz, 3, 64, 64]
 
         return x
+
+class Sparse(nn.Module):
+    def __init__(self, topk):
+        super(Sparse, self).__init__()
+        self.topk = topk
+    
+    def forward(self, x):
+
 
 
 if __name__ == "__main__":
