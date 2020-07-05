@@ -268,7 +268,7 @@ def sparsech(fm,kinchanel):
     #nb = shape[0]
     #nc = shape[2] 
     ###first along the channel direction
-      
+
     th, _ = tf.nn.top_k(fm, kinchanel) # nb, nt, kinchanel
     thk = tf.slice(th,[0,0,kinchanel-1],[-1,-1,1]) # nb,nt,1    
     drop1 = tf.where(fm < thk, 

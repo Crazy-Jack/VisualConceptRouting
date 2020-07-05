@@ -163,13 +163,15 @@ class Generator(nn.Module):
 
         return x
 
-class Sparse(nn.Module):
+class Sparsify(nn.Module):
     def __init__(self, topk):
         super(Sparse, self).__init__()
         self.topk = topk
     
-    def forward(self, x):
-
+    def forward(self, x): 
+        # Input x is [bsz, channel, imgs, imgs]
+        
+        
 
 
 if __name__ == "__main__":
