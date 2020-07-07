@@ -15,14 +15,19 @@ class MyTransform:
         super(MyTransform).__init__()
         # normolize
         if args.dataset == 'lsun-bed':
-            self.mean = (0.5, 0.5, 0.5)
-            self.std = (0.5, 0.5, 0.5)
+            self.mean = (0.5756, 0.5136, 0.4587)
+            self.std = (0.2419, 0.2516, 0.2648)
         else:
             raise ValueError('dataset not supported: {}'.format(args.dataset))
         self.normalize = transforms.Normalize(mean=self.mean, std=self.std)
+        self.img_size = args.img_size
 
-    def train_transform(self, tosize=(64,64), interpolation=Image.LANCZOS):
+    def train_transform(self, tosize=None, interpolation=Image.LANCZOS):
         """Transform for train"""
+        if not tosize:
+            tosize = (self.img_size, self.img_size)
+        else:
+            assert len(tosize) == 2, "tosize dim is wrong, require (_, _) but get: {}".format(tosize)
         train_transform = transforms.Compose([
             transforms.Resize(size=tosize, interpolation=interpolation),
             transforms.ToTensor(),
@@ -34,24 +39,24 @@ class MyTransform:
 
 class LsunDataset(Dataset):
     """Dataset for LSUN benchmark"""
-    def __init__(self, root='../data_unzip/bedroom_train_lmdb/imgs', transform=None):
+    def __init__(self, df, root='../data_unzip/bedroom_train_lmdb/imgs', transform=None):
         super(LsunDataset, self).__init__()
+        self.df = df
         self.root = root
-        self.img_list = os.listdir(self.root)
         self.transform = transform
 
     def __len__(self):
-        return len(self.img_list)
+        return len(self.df)
 
     def __getitem__(self, index):
-        self.img_filename = os.path.join(self.root, self.img_list[index])
+        self.img_filename = os.path.join(self.root, self.df.iloc[index, 0])
         img = Image.open(self.img_filename).convert('RGB')
 
         if self.transform:
             img = self.transform(img)
         return img, 0
 
-def image_statistics(data_loader):
+def calculate_img_stats(data_loader):
     means = torch.zeros([3,])
     stds = torch.zeros([3,])
 
@@ -77,20 +82,26 @@ def image_statistics(data_loader):
         #print(var)
     pixs = img.shape[2] * img.shape[3]
     stds = torch.sqrt(var / (num_data * pixs))
-    print("stds: ", stds)  
+    print("stds: ", stds)
 
     return means, stds
 
 def main():
     from main_sparse import set_args
+    import pandas as pd
     args = set_args()
-    train_transform_ = MyTransform(args).train_transform()
-    train_dataset = LsunDataset(root='../data_unzip/bedroom_train_lmdb/imgs', transform=train_transform_)
+    mytransform = transforms.Compose([
+        transforms.Resize((64,64)),
+        transforms.ToTensor(),
+    ])
+    mytransform = MyTransform(args).train_transform()
+    train_df = pd.read_csv("/home/tianqinl/Code/VisualConceptRouting/data_process/lsun_100k.csv", index_col=0)
+    train_dataset = LsunDataset(train_df, root='../data_unzip/bedroom_train_lmdb/imgs', transform=mytransform)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=False,
         num_workers=args.num_workers, pin_memory=True)
     
-    mean, stds = image_statistics(train_loader)
+    mean, stds = calculate_img_stats(train_loader)
 
 
 if __name__ == "__main__":

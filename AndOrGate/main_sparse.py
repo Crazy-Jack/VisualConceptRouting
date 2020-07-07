@@ -34,7 +34,12 @@ def set_loader(args):
     train_transform = MyTransform(args).train_transform()
 
     #train_dataset = datasets.LSUN(root='../data_unzip', classes='train')
-    train_dataset = LsunDataset(root='../data_unzip/bedroom_train_lmdb/imgs', transform=train_transform)
+    if args.dataset == 'lsun-bed':
+        # train_dataset = LsunDataset(root='../data_unzip/bedroom_train_lmdb/imgs', transform=train_transform)
+        pass
+    elif args.dataset == 'deepfashion':
+        pass
+    
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_workers, pin_memory=True)
