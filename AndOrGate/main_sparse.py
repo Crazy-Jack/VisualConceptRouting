@@ -17,6 +17,11 @@ def set_args():
     # data
     parser.add_argument('--dataset', type=str, default= 'lsun-bed',
                         choices=['lsun-bed'], help="choose which dataset are using")
+    parser.add_argument('--data_folder', type=str, default='../data_unzip/bedroom_train_lmdb', help='dataset')
+    parser.add_argument('--data_root_name', type=str, default='imgs', choices=['imgs'],
+                        help="dataset img folder name, only needed when dataset is organized by folders of img")
+    parser.add_argument('--meta_file_train', type=str, default='meta_lsun_100k.csv',
+                        help='meta data for ssl training')
     # train
     parser.add_argument('--epochs', type=int, default=1000,
                         help='number of training epochs')
@@ -26,6 +31,8 @@ def set_args():
                         help='batch_size')
     
     args = parser.parse_args()
+
+
     return args
 
 
@@ -33,12 +40,12 @@ def set_loader(args):
     """Configure dataloader"""
     train_transform = MyTransform(args).train_transform()
 
-    #train_dataset = datasets.LSUN(root='../data_unzip', classes='train')
     if args.dataset == 'lsun-bed':
-        # train_dataset = LsunDataset(root='../data_unzip/bedroom_train_lmdb/imgs', transform=train_transform)
-        pass
-    elif args.dataset == 'deepfashion':
-        pass
+        train_df = pd.read_csv(os.path.join(args.data_folder, args.meta_file_train)
+        train_dataset = LsunDataset(train_df, root=os.path.join(args.data_folder, args.data_root_name),
+                                    transform=train_transform）
+    else:
+        raise ValueError(args.datasets)
     
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,

@@ -170,6 +170,7 @@ class Sparsify(nn.Module):
     
     def forward(self, x): 
         # Input x is [bsz, channel, imgs, imgs]
+        return x
         
         
 

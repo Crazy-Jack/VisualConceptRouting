@@ -2,6 +2,7 @@
 import io
 import os
 import argparse
+from shutil import copyfile
 
 import lmdb
 import pandas as pd
@@ -15,9 +16,14 @@ def set_args():
                         help="database folder")
     parser.add_argument("--df_path", type=str, default="lsun_100k.csv",
                         help="100k dataframe list path")
-    parser.add_argument("--out_dir", type=str, default="../data_unzip/bedroom_train_lmdb/lsun_bed100k")
+    parser.add_argument("--out_dir", type=str, default="../data_unzip/bedroom_train_lmdb/lsun_bed100k/imgs")
+    parser.add_argument("--meta_file_name", type=str, default="meta_lsun_100k.csv")
+    
     
     args = parser.parse_args()
+
+    args.meta_folder = "/".join(args.out_dir.split("/")[:-1])
+    args.meta_file_path = os.path.join(args.meta_folder, args.meta_file_name)
 
     return args
 
@@ -45,7 +51,11 @@ def export_images(df, db_path, out_dir):
 def main():
     args = set_args()
     df = pd.read_csv(args.df_path, index_col=0)
+    # export imgs
     last_img_path = export_images(df, args.db_path, args.out_dir)
+    # transfer meta data
+    copyfile(args.df_path, args.meta_file_path)
+    
 
     # test
     print("Testing results")
