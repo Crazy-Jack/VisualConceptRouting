@@ -8,6 +8,12 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
 def save_model(model, optimizer, args, epoch, save_file):
     print('==> Saving...')
     state = {
@@ -18,3 +24,4 @@ def save_model(model, optimizer, args, epoch, save_file):
     }
     torch.save(state, save_file)
     del state
+

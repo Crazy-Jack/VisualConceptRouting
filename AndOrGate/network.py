@@ -172,7 +172,22 @@ class Sparsify(nn.Module):
         # Input x is [bsz, channel, imgs, imgs]
         return x
         
-        
+
+class Models:
+    def __init__(self, encoder, generator, critic):
+        self.encoder = encoder
+        self.generator = generator
+        self.critic = critic
+    def train(self):
+        self.encoder.train()
+        self.generator.train()
+        self.critic.train()
+
+    def eval(self):
+        self.encoder.eval()
+        self.generator.eval()
+        self.critic.eval()
+
 
 
 if __name__ == "__main__":
