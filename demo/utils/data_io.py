@@ -5,6 +5,7 @@ from PIL import Image
 import scipy.misc
 
 from six.moves import xrange
+from tqdm import tqdm
 
 IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm']
 
@@ -14,7 +15,7 @@ def LoadDataSet(path, im_size, mode):
     imgList.sort()
     images = np.zeros((len(imgList), im_size[0], im_size[1], im_size[2])).astype(np.float32)
     print('Loading dataset: {}'.format(path))
-    for i in xrange(len(imgList)):
+    for i in tqdm(xrange(len(imgList))):
             if im_size[2]==3:
                 image = Image.open(os.path.join(path, imgList[i])).convert('RGB')
                 image = image.resize(im_size[0:2],Image.LANCZOS)

@@ -11,6 +11,7 @@ from torchvision import datasets
 
 from data_utlis import LsunDataset
 from data_utlis import MyTransform
+from network import Critic, Generator, Encoder
 
 def set_args():
     parser = argparse.ArgumentParser("Visual Concept routing")
@@ -41,9 +42,9 @@ def set_loader(args):
     train_transform = MyTransform(args).train_transform()
 
     if args.dataset == 'lsun-bed':
-        train_df = pd.read_csv(os.path.join(args.data_folder, args.meta_file_train)
+        train_df = pd.read_csv(os.path.join(args.data_folder, args.meta_file_train))
         train_dataset = LsunDataset(train_df, root=os.path.join(args.data_folder, args.data_root_name),
-                                    transform=train_transform）
+                                    transform=train_transform)
     else:
         raise ValueError(args.datasets)
     
@@ -54,6 +55,12 @@ def set_loader(args):
 
 def set_model():
     """Configure models and loss"""
+
+    # models
+    encoder = Encoder()
+    generator = Generator()
+    critic = Critic()
+
 
     pass
 
