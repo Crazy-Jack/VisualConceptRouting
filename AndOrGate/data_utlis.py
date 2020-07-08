@@ -37,10 +37,10 @@ class MyTransform:
         return train_transform
 
 
-class LsunDataset(Dataset):
+class LsunBedDataset(Dataset):
     """Dataset for LSUN benchmark"""
-    def __init__(self, df, root='../data_unzip/bedroom_train_lmdb/imgs', transform=None):
-        super(LsunDataset, self).__init__()
+    def __init__(self, df, root='../data_unzip/bedroom_train_lmdb/lsun_bed100k', transform=None):
+        super(LsunBedDataset, self).__init__()
         self.df = df
         self.root = root
         self.transform = transform
@@ -49,12 +49,12 @@ class LsunDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, index):
-        self.img_filename = os.path.join(self.root, self.df.iloc[index, 0])
+        self.img_filename = os.path.join(self.root, self.df.iloc[index, 1])
         img = Image.open(self.img_filename).convert('RGB')
 
         if self.transform:
             img = self.transform(img)
-        return img, 0
+        return img
 
 def calculate_img_stats(data_loader):
     means = torch.zeros([3,])

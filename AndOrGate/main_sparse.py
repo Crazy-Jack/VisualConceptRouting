@@ -4,46 +4,95 @@ Pytorch Implementation for Inducing Hierarchical Compositional Model by Sparsify
 import os
 import argparse
 import numpy as np
+import shutil
+import multiprocessing
 
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+import torch.backends.cudnn as cudnn
 from torchvision import datasets
+from torch.autograd import Variable
+import tensorboard_logger as tb_logger
+import pandas as pd
 
-from data_utlis import LsunDataset
+from data_utlis import LsunBedDataset
 from data_utlis import MyTransform
 from network import Critic, Generator, Encoder, Models
-from utlis import dotdict
-from torch.autograd import Variable
+from utlis import save_model
+from utlis import txt_logger
+
 
 def set_args():
     parser = argparse.ArgumentParser("Visual Concept routing")
     # data
     parser.add_argument('--dataset', type=str, default= 'lsun-bed',
                         choices=['lsun-bed'], help="choose which dataset are using")
-    parser.add_argument('--data_folder', type=str, default='../data_unzip/bedroom_train_lmdb', help='dataset')
+    parser.add_argument('--data_folder', type=str, default='../data_unzip/bedroom_train_lmdb/lsun_bed100k', help='dataset')
     parser.add_argument('--data_root_name', type=str, default='imgs', choices=['imgs'],
                         help="dataset img folder name, only needed when dataset is organized by folders of img")
     parser.add_argument('--meta_file_train', type=str, default='meta_lsun_100k.csv',
                         help='meta data for ssl training')
+    parser.add_argument('--img_size', type=int, default=64,
+                        help='img size used in training')
     # train
     parser.add_argument('--epochs', type=int, default=1000,
                         help='number of training epochs')
-    parser.add_argument('--num_workers', type=int, default=16,
+    parser.add_argument('--num_workers', type=int, default=multiprocessing.cpu_count()-3,
                         help='num of workers to use when load data')
     parser.add_argument('--batch_size', type=int, default=128,
                         help='batch_size')
+    parser.add_argument('--parallel', action='store_true', help="true if using data parallel")
     
-    # generator
+    # loss weight
     parser.add_argument('--recon_weight', type=float, default=0.1,
                         help='reconstruction weight')
+    parser.add_argument('--real_critic_weight', type=float, default=1e-3,
+                        help='weight in critic real score')
+    parser.add_argument('--gp_weight', type=float, default=10,
+                        help='weight for gradient penalty')
     parser.add_argument('--z_dim', type=int, default=100,
                         help='dimemtion for latent z')
-    real_norm_weight
+
+    # optimizer
+    parser.add_argument('--lr_encoder', type=float, default=7e-4,
+                        help='lr for encoder')
+    parser.add_argument('--lr_generator', type=float, default=7e-4,
+                    help='lr for generator')
+    parser.add_argument('--lr_critic', type=float, default=7e-4,
+                    help='lr for critic')
+    # other
+    parser.add_argument('--resume_model_path', type=str, default='0',
+                    help='from with model training would resume')
     
     
     args = parser.parse_args()
 
+    args.data_root_folder = os.path.join(args.data_folder, args.data_root_name)
+    args.model_path = '../train_related/VisulConceptRouting/SparseVAEGAN/{}_models_'.format(args.dataset)
+    args.tb_path = '../train_related/VisulConceptRouting/SparseVAEGAN/{}_tensorboard_'.format(args.dataset)
+    
+    if args.resume_model_path != '0':
+        args.pre_ssl_epoch = int(opt.resume_model_path.split('/')[-1].split('.')[0].split('_')[-1])
+        args.model_path += '_resume_from_epoch_{}'.format(args.pre_ssl_epoch)
+        args.tb_path += '_resume_from_epoch_{}'.format(args.pre_ssl_epoch)
+    
+
+    args.model_name = '{}_recon_weight_{}_zdim_{}'.\
+        format(args.dataset, args.recon_weight, args.z_dim)
+
+    args.tb_folder = os.path.join(args.tb_path, args.model_name)
+    if os.path.isdir(args.tb_folder):
+        delete = input("Are you sure to delete folder {}？ (Y/n)".format(args.tb_folder))
+        if delete.lower() == 'y': 
+            shutil.rmtree(args.tb_folder)
+        else:
+            sys.exit("{} FOLDER is untorched.".format(args.tb_folder))
+    os.makedirs(args.tb_folder)
+
+    args.save_folder = os.path.join(args.model_path, args.model_name)
+    if not os.path.isdir(args.save_folder):
+        os.makedirs(args.save_folder)
 
     return args
 
@@ -72,7 +121,7 @@ def gradient_penalty(real_data, generated_data, Critic, device, args):
     # Derivatives of the gradient close to 0 can cause problems because of
     # the square root, so manually calculate norm and add epsilon
     gradients_norm = torch.sqrt(torch.sum(gradients ** 2, dim=1) + 1e-12)
-    return args.gpweight * ((gradients_norm - 1) ** 2).mean()
+    return args.gp_weight * ((gradients_norm - 1) ** 2).mean()
 
 
 def set_loader(args):
@@ -81,7 +130,7 @@ def set_loader(args):
 
     if args.dataset == 'lsun-bed':
         train_df = pd.read_csv(os.path.join(args.data_folder, args.meta_file_train))
-        train_dataset = LsunDataset(train_df, root=os.path.join(args.data_folder, args.data_root_name),
+        train_dataset = LsunBedDataset(train_df, root=args.data_root_folder,
                                     transform=train_transform)
     else:
         raise ValueError(args.datasets)
@@ -93,17 +142,16 @@ def set_loader(args):
 
 def set_model(args):
     """Configure models and loss"""
-
     # models
-    encoder = Encoder()
-    generator = Generator()
-    critic = Critic()
+    encoder = Encoder(out_dim=args.z_dim).cuda()
+    generator = Generator(z_dim=args.z_dim).cuda()
+    critic = Critic().cuda()
 
     models = Models(encoder, generator, critic)
 
     optim_encoder = torch.optim.Adam(encoder.parameters(), lr=args.lr_encoder)
     optim_generator = torch.optim.Adam(generator.parameters(), lr=args.lr_generator)
-    optim_critic = torch.optim.Adam(critic.parameters(), lr=args.lr_generator)
+    optim_critic = torch.optim.Adam(critic.parameters(), lr=args.lr_critic)
 
     # critieron
     l2_reconstruct_criterion = nn.MSELoss()
@@ -167,24 +215,48 @@ def train_critic(train_loader, models, optim_critic, args):
 
         loss = loss1 + loss_2 + loss_3
         losses += loss.item()
+
         loss.backward()
         optim_critic.zero_grad()
         optim_critic.step()
+
     losses = losses / num_data
+
     return losses
 
 
 def main():
     args = set_args()
+    # tensorboard and logger
+    tf_logger = tb_logger.Logger(logdir=args.tb_folder, flush_secs=2)
+    scalar_logger = txt_logger(args.save_folder, args)
 
+    # set loader
     train_loader = set_loader(args)
-    for epoch in args.epochs:
-        models, optim_encoder, optim_generator, optim_critic, l2_reconstruct_criterion = set_model()
+
+    # get model and optimizers
+    models, optim_encoder, optim_generator, optim_critic, l2_reconstruct_criterion = set_model(args)
+
+    # train routine
+    for epoch in range(1, args.epochs + 1):
+        # train encoder and generator
         recon_losses, critic_losses = train_encoder_generator(train_loader, models, optim_encoder, optim_generator, l2_reconstruct_criterion, args)
-        critic_loss = train_critic(train_loader, models, optim_critic, args)
+        
+        # train critic
+        train_critic_loss = train_critic(train_loader, models, optim_critic, args)
 
-
-
+        # logging
+        tf_logger.log_value('recon_losses', recon_losses, epoch)
+        tf_logger.log_value('critic_losses', critic_losses, epoch)
+        tf_logger.log_value('train_critic_loss', train_critic_loss, epoch)
+        scalar_logger.log_value(epoch, ('recon_losses', recon_losses), 
+                                       ('critic_losses', critic_losses),
+                                       ('train_critic_loss', train_critic_loss))
+        
+        if epoch % args.save_freq == 0 or epoch == args.epochs:
+            save_model(model.encoder, optim_encoder, args, epoch, os.path.join(args.save_folder, 'ckpt_encoder_epoch_{}.ckpt'.format(epcoh)))
+            save_model(model.generator, optim_generator, args, epoch, os.path.join(args.save_folder, 'ckpt_generator_epoch_{}.ckpt'.format(epcoh)))
+            save_model(model.critic, optim_critic, args, epoch, os.path.join(args.save_folder, 'ckpt_critic_epoch_{}.ckpt'.format(epcoh)))
 
 if __name__ == "__main__":
     main()
