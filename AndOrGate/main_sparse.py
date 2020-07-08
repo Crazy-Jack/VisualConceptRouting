@@ -11,7 +11,6 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-from torchvision import datasets
 from torch.autograd import Variable
 import tensorboard_logger as tb_logger
 import pandas as pd
@@ -133,7 +132,7 @@ def set_loader(args):
         train_dataset = LsunBedDataset(train_df, root=args.data_root_folder,
                                     transform=train_transform)
     else:
-        raise ValueError(args.datasets)
+        raise ValueError(args.dataset)
     
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
