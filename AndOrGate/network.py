@@ -177,7 +177,7 @@ class Sparsify(nn.Module):
         _, index = torch.topk(x, self.topk, dim=sparse_dim)
         mask = torch.zeros_like(x.shape).scatter_(sparse_dim, index, 1)
         sparsed_x = mask * x
-        return x
+        return sparsed_x
 
 class Sparsify_hw(nn.Module):
     def __init__(self, topk):
