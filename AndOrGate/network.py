@@ -142,11 +142,11 @@ class Generator(nn.Module):
         self.relu1 = nn.ReLU()
         self.sparse2 = nn.Conv2d(200, 200 * 4 * 4, 3, 1, 1) # TODO: k=? Fill sparsity code: change from [bsz, 200, 4, 4] -> [bsz, 200 * 4 * 4, 4, 4]
         self.block3 = BasicBlockUp(200 * 4 * 4, hidden_dim * 8) # [bsz, 64 * 8, 8, 8]
-        self.sparse3 = nn.Sparsify(topk= 8 * 8 / 4) # TODO: change sparse operation; k = 8 * 8 / 4
+        self.sparse3 = Sparsify(topk= 8 * 8 / 4) # TODO: change sparse operation; k = 8 * 8 / 4
         self.block4 = BasicBlockUp(hidden_dim * 8, hidden_dim * 4) # [bsz, 64 * 4, 16, 16]
-        self.sparse4 = nn.Sparsify(topk= 16 * 16 / 4) # TODO: change sparse operation; k = 16 * 16 / 4
+        self.sparse4 = Sparsify(topk= 16 * 16 / 4) # TODO: change sparse operation; k = 16 * 16 / 4
         self.block5 = ResBlockUp(hidden_dim * 4, hidden_dim * 2) # [bsz, 64 * 2, 32, 32]
-        self.sparse5 = nn.Sparsify(topk = 32 * 32 / 4) # TODO: change sparse operation; k = 32 * 32 / 4
+        self.sparse5 = Sparsify(topk = 32 * 32 / 4) # TODO: change sparse operation; k = 32 * 32 / 4
         self.block6 = BasicBlockUp(hidden_dim * 2, hidden_dim) # [bsz, 64, 64, 64]
         self.conv2d7 = nn.Conv2d(hidden_dim, out_channel, 5, 1, 2) # [bsz, 3, 64, 64]
         self.tanh7 = nn.Tanh()
@@ -172,7 +172,7 @@ class Sparsify(nn.Module):
     
     def forward(self, x, sparse_dim=1): 
         # Input x is [bsz, channel, imgs, imgs]
-        
+
         assert self.topk <= x.shape[sparse_dim], "Sparse K ({}) is larger or equal to the sparse dim ({})".format(self.topk, x.shape[sparse_dim])
         _, index = torch.topk(x, self.topk, dim=sparse_dim)
         mask = torch.zeros(x.shape).scatter_(sparse_dim, index, 1)
