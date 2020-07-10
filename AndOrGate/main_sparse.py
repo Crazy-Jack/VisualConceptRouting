@@ -264,9 +264,9 @@ def main():
                                        ('train_critic_loss', train_critic_loss))
         
         if epoch % args.save_freq == 0 or epoch == args.epochs:
-            save_model(model.encoder, optim_encoder, args, epoch, os.path.join(args.save_folder, 'ckpt_encoder_epoch_{}.ckpt'.format(epcoh)))
-            save_model(model.generator, optim_generator, args, epoch, os.path.join(args.save_folder, 'ckpt_generator_epoch_{}.ckpt'.format(epcoh)))
-            save_model(model.critic, optim_critic, args, epoch, os.path.join(args.save_folder, 'ckpt_critic_epoch_{}.ckpt'.format(epcoh)))
+            save_model(models.encoder, optim_encoder, args, epoch, os.path.join(args.save_folder, 'ckpt_encoder_epoch_{}.ckpt'.format(epoch)))
+            save_model(models.generator, optim_generator, args, epoch, os.path.join(args.save_folder, 'ckpt_generator_epoch_{}.ckpt'.format(epoch)))
+            save_model(models.critic, optim_critic, args, epoch, os.path.join(args.save_folder, 'ckpt_critic_epoch_{}.ckpt'.format(epoch)))
 
 if __name__ == "__main__":
     """Command
