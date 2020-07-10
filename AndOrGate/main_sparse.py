@@ -194,7 +194,7 @@ def train_encoder_generator(train_loader, models, optim_encoder, optim_generator
         
         recon_losses += reconstruct_loss.item()
         critic_losses += critic_loss.item()
-        break
+
     recon_losses = recon_losses / num_data
     critic_losses = critic_losses / num_data
     return recon_losses, critic_losses
