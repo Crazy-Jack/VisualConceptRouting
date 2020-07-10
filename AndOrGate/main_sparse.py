@@ -146,6 +146,14 @@ def set_model(args):
     generator = Generator(z_dim=args.z_dim).cuda()
     critic = Critic().cuda()
 
+    if torch.cuda.device_count() > 1:
+        print("Use device count: {}".format(torch.cuda.device_count()))
+        encoder = torch.nn.DataParallel(encoder)
+        generator = torch.nn.DataParallel(generator)
+        critic = torch.nn.DataParallel(critic)
+        model = model.cuda()
+        cudnn.benchmark = True
+
     models = Models(encoder, generator, critic)
 
     optim_encoder = torch.optim.Adam(encoder.parameters(), lr=args.lr_encoder)
@@ -153,7 +161,7 @@ def set_model(args):
     optim_critic = torch.optim.Adam(critic.parameters(), lr=args.lr_critic)
 
     # critieron
-    l2_reconstruct_criterion = nn.MSELoss()
+    l2_reconstruct_criterion = nn.MSELoss().cuda()
 
     return models, optim_encoder, optim_generator, optim_critic, l2_reconstruct_criterion
 
@@ -212,7 +220,7 @@ def train_critic(train_loader, models, optim_critic, args):
         # real critic constrain
         loss_3 = args.real_critic_weight * (torch.square(real_score)).mean()
 
-        loss = loss1 + loss_2 + loss_3
+        loss = loss_1 + loss_2 + loss_3
         losses += loss.item()
 
         loss.backward()
@@ -258,4 +266,7 @@ def main():
             save_model(model.critic, optim_critic, args, epoch, os.path.join(args.save_folder, 'ckpt_critic_epoch_{}.ckpt'.format(epcoh)))
 
 if __name__ == "__main__":
+    """Command
+    $ python main_sparse.py
+    """
     main()
