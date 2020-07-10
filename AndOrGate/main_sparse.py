@@ -96,7 +96,7 @@ def set_args():
     return args
 
 
-def gradient_penalty(real_data, generated_data, Critic, device, args):
+def gradient_penalty(real_data, generated_data, Critic, args):
     batch_size = real_data.size()[0]
     # Calculate interpolation
     alpha = torch.rand(batch_size, 1)
