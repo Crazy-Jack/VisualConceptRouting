@@ -14,6 +14,7 @@ import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 import tensorboard_logger as tb_logger
 import pandas as pd
+from torch.autograd import grad as torch_grad
 
 from data_utlis import LsunBedDataset
 from data_utlis import MyTransform
@@ -100,19 +101,17 @@ def gradient_penalty(real_data, generated_data, Critic, args):
     batch_size = real_data.size()[0]
     # Calculate interpolation
     alpha = torch.rand(batch_size, 1)
-    alpha = alpha.expand_as(real_data)
+    alpha = alpha.unsqueeze(-1).unsqueeze(-1).expand_as(real_data)
     alpha = alpha.cuda()
     interpolated = alpha * real_data.data + (1 - alpha) * generated_data.data
     interpolated = Variable(interpolated, requires_grad=True)
     interpolated = interpolated.cuda()
     # Calculate probability of interpolated examples
     prob_interpolated = Critic(interpolated) 
-
     # Calculate gradients of probabilities with respect to examples
     gradients = torch_grad(outputs=prob_interpolated, inputs=interpolated,
                            grad_outputs=torch.ones(prob_interpolated.size()).cuda(),
                            create_graph=True, retain_graph=True)[0]
-
     # Gradients have shape (batch_size, num_channels, img_width, img_height),
     # so flatten to easily take norm per example in batch
     gradients = gradients.view(batch_size, -1)
@@ -195,6 +194,7 @@ def train_encoder_generator(train_loader, models, optim_encoder, optim_generator
         
         recon_losses += reconstruct_loss.item()
         critic_losses += critic_loss.item()
+        break
     recon_losses = recon_losses / num_data
     critic_losses = critic_losses / num_data
     return recon_losses, critic_losses
@@ -210,7 +210,7 @@ def train_critic(train_loader, models, optim_critic, args):
         num_data += bzs
         with torch.no_grad():
             sample_z = np.random.uniform(-1, 1, (bzs, args.z_dim)) # their code exactly
-            latent_z = Variable(torch.FloatTensor(sample_z), requires_grad=False)
+            latent_z = Variable(torch.FloatTensor(sample_z), requires_grad=False).cuda()
             generated_img = models.generator(latent_z).detach()
         
         fake_score = models.critic(generated_img)
@@ -218,7 +218,7 @@ def train_critic(train_loader, models, optim_critic, args):
         # wGAN loss
         loss_1 = fake_score.mean() - real_score.mean()
         # gradient penalty
-        loss_2 = gradient_penalty(img, generated_img, Critic, args)
+        loss_2 = gradient_penalty(img, generated_img, models.critic, args)
         # real critic constrain
         loss_3 = args.real_critic_weight * (torch.square(real_score)).mean()
 
