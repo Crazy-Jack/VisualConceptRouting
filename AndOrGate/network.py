@@ -140,13 +140,13 @@ class Generator(nn.Module):
         self.relu0 = nn.ReLU()
         self.conv2d1 = nn.Conv2d(hidden_dim * 8, 200, 3, 1, 1) # [bsz, 200, 4, 4]
         self.relu1 = nn.ReLU()
-        self.sparse2 = nn.Conv2d(200, 200 * 4 * 4, 3, 1, 1) # TODO: k=? Fill sparsity code: change from [bsz, 200, 4, 4] -> [bsz, 200 * 4 * 4, 4, 4]
+        self.sparse2 = Sparsify_ch(topk=int(0.1 * 200))# TODO: k=? Fill sparsity code: change from [bsz, 200, 4, 4] -> [bsz, 200 * 4 * 4, 4, 4]
         self.block3 = BasicBlockUp(200 * 4 * 4, hidden_dim * 8) # [bsz, 64 * 8, 8, 8]
-        self.sparse3 = Sparsify_hw(topk= 8 * 8 / 4) # TODO: change sparse operation; k = 8 * 8 / 4
+        self.sparse3 = Sparsify_hw(topk= int(8 * 8 / 4)) # TODO: change sparse operation; k = 8 * 8 / 4
         self.block4 = BasicBlockUp(hidden_dim * 8, hidden_dim * 4) # [bsz, 64 * 4, 16, 16]
-        self.sparse4 = Sparsify_hw(topk= 16 * 16 / 4) # TODO: change sparse operation; k = 16 * 16 / 4
+        self.sparse4 = Sparsify_hw(topk= int(16 * 16 / 4)) # TODO: change sparse operation; k = 16 * 16 / 4
         self.block5 = ResBlockUp(hidden_dim * 4, hidden_dim * 2) # [bsz, 64 * 2, 32, 32]
-        self.sparse5 = Sparsify_hw(topk = 32 * 32 / 4) # TODO: change sparse operation; k = 32 * 32 / 4
+        self.sparse5 = Sparsify_hw(topk = int(32 * 32 / 4)) # TODO: change sparse operation; k = 32 * 32 / 4
         self.block6 = BasicBlockUp(hidden_dim * 2, hidden_dim) # [bsz, 64, 64, 64]
         self.conv2d7 = nn.Conv2d(hidden_dim, out_channel, 5, 1, 2) # [bsz, 3, 64, 64]
         self.tanh7 = nn.Tanh()
@@ -154,7 +154,9 @@ class Generator(nn.Module):
     def forward(self, x):
         x = self.relu0(self.fc0(x))
         x = self.relu1(self.conv2d1(x.reshape([-1, 64 * 8, 4, 4])))
-        x = self.sparse2(x) # [bsz, 200 * 4 * 4, 4, 4]
+        x = self.sparse2(x)  # [bsz, 200, 4, 4]
+        bsz, nc, nh, nw = x.shape
+        x = x.unsqueeze(1).expand(-1, 4 * 4, -1, -1, -1).reshape(bsz, 4 * 4 * nc, nh, nw) # [bsz, 4 * 4 * 200, 4, 4]
         x = self.sparse3(self.block3(x)) # [bsz, 64 * 8, 8, 8]
         x = self.sparse4(self.block4(x)) # [bsz, 64 * 4, 16, 16]
         x = self.sparse5(self.block5(x)) # [bsz, 64 * 2, 32, 32]
@@ -163,19 +165,20 @@ class Generator(nn.Module):
 
         return x
 
-class Sparsify(nn.Module):
+
+
+class Sparsify_ch(nn.Module):
     """Sparsify tensors on specific dim
     """
     def __init__(self, topk):
-        super(Sparsify, self).__init__()
+        super(Sparsify_ch, self).__init__()
         self.topk = topk
     
     def forward(self, x, sparse_dim=1): 
-        # Input x is [bsz, channel, imgs, imgs]
-
+        # Input x is [bsz, channel, h, h]
         assert self.topk <= x.shape[sparse_dim], "Sparse K ({}) is larger or equal to the sparse dim ({})".format(self.topk, x.shape[sparse_dim])
         _, index = torch.topk(x, self.topk, dim=sparse_dim)
-        mask = torch.zeros_like(x.shape).scatter_(sparse_dim, index, 1)
+        mask = torch.zeros_like(x).scatter_(sparse_dim, index, 1)
         sparsed_x = mask * x
         return sparsed_x
 
@@ -186,8 +189,8 @@ class Sparsify_hw(nn.Module):
     def forward(self, x):
         n,c,h,w = x.shape
         x_reshape = x.view(n,c,h*w)
-        _, index = torch.topk(x, self.topk, dim=2)
-        mask = torch.zeros_like(x_reshape).scatter_(dim=2, index=index, src=1.0)
+        _, index = torch.topk(x_reshape, self.topk, dim=2)
+        mask = torch.zeros_like(x_reshape).scatter_(2, index, 1)
         sparse_x = mask * x_reshape
         return sparse_x.view(n,c,h,w)
 
@@ -211,42 +214,3 @@ class Models:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
-
-
-# class Generator(nn.Module):
-#     def __init__(self, z_dim, hidden_dim=64, out_channel=3):
-#         super().__init__()
-
-#         # Input is the latent vector Z.
-#         self.tconv1 = nn.ConvTranspose2d(z_dim, hidden_dim * 8,
-#             kernel_size=4, stride=1, padding=0, bias=False)
-#         self.bn1 = nn.BatchNorm2d(hidden_dim * 8)
-
-#         # Input Dimension: (hidden_dim*8) x 4 x 4
-#         self.tconv2 = nn.ConvTranspose2d(hidden_dim * 8, hidden_dim * 4,
-#             4, 2, 1, bias=False)
-#         self.bn2 = nn.BatchNorm2d(hidden_dim * 4)
-
-#         # Input Dimension: (hidden_dim*4) x 8 x 8
-#         self.tconv3 = nn.ConvTranspose2d(hidden_dim * 4, hidden_dim * 2,
-#             4, 2, 1, bias=False)
-#         self.bn3 = nn.BatchNorm2d(hidden_dim * 2)
-
-#         # Input Dimension: (hidden_dim*2) x 16 x 16
-#         self.tconv4 = nn.ConvTranspose2d(hidden_dim * 2, hidden_dim,
-#             4, 2, 1, bias=False)
-#         self.bn4 = nn.BatchNorm2d(hidden_dim)
-
-#         # Input Dimension: (hidden_dim) * 32 * 32
-#         self.tconv5 = nn.ConvTranspose2d(hidden_dim, 3,
-#             4, 2, 1, bias=False)
-#         # Output Dimension: (out_channel) x 64 x 64
-
-#     def forward(self, x):
-#         x = F.relu(self.bn1(self.tconv1(x)))
-#         x = F.relu(self.bn2(self.tconv2(x)))
-#         x = F.relu(self.bn3(self.tconv3(x)))
-#         x = F.relu(self.bn4(self.tconv4(x)))
-#         x = F.tanh(self.tconv5(x))
-#         return x
