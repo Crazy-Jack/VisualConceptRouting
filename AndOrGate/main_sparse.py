@@ -43,6 +43,7 @@ def set_args():
     parser.add_argument('--batch_size', type=int, default=128,
                         help='batch_size')
     parser.add_argument('--parallel', action='store_true', help="true if using data parallel")
+    parser.add_argument('--save_freq', type=int, default=10, help="save freq for models")
     
     # loss weight
     parser.add_argument('--recon_weight', type=float, default=0.1,
