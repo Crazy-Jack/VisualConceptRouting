@@ -151,7 +151,9 @@ def set_model(args):
         encoder = torch.nn.DataParallel(encoder)
         generator = torch.nn.DataParallel(generator)
         critic = torch.nn.DataParallel(critic)
-        model = model.cuda()
+        encoder.cuda()
+        generator.cuda()
+        critic.cuda()
         cudnn.benchmark = True
 
     models = Models(encoder, generator, critic)
