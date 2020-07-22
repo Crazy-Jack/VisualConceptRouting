@@ -99,7 +99,7 @@ def set_args():
     return args
 
 def vae_loss_function(mu, logvar):
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
     return KLD
 
