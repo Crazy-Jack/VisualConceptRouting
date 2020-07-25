@@ -15,6 +15,8 @@ import tensorboard_logger as tb_logger
 import pandas as pd
 from torch.autograd import grad as torch_grad
 from PIL import Image
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 
 from data_utlis import LsunBedDataset
 from data_utlis import MyTransform
@@ -49,6 +51,8 @@ def set_args():
 
 
     args = parser.parse_args()
+
+    args.eval_epoch = int(args.generator_model_path.split("/")[-1].split(".")[-2].split("_")[-1])
 
     args.data_root_folder = os.path.join(args.data_folder, args.data_root_name)
     return args
@@ -85,41 +89,72 @@ def load_model(args, model, mode):
     model.load_state_dict(state_dict)
     return model
 
-def save_batch_img(args, data_loader, generator, encoder):
+def plot_one_batch(img, Nh, Nw):
+    """convert a batch of img (tensor) to a grid of img that can be saved
+    Args:
+        --img: [bsz, c, h, w]
+        --Nh: num of img in each column
+        --Nw: num of img in each row
+    """
+    assert img.shape[0] >= Nh * Nw, "Nh * Nw is bigger than total images passed"
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(Nh, Nw)
+    gs.update(wspace=0.05, hspace=0.05)
+    for idx, img_i in enumerate(img[:Nh * Nw]):
+        """loop through img"""
+        ax = plt.subplot(gs[idx])
+        plt.axis('off')
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_aspect('equal')
+        # img_i = img_from_tensor(img_i).convert('RGB')
+        img_i = np.transpose(img_i, [1, 2, 0])
+        img_i = np.clip(img_i, -1, 1)
+        img_i = img_i * 0.5 + 0.5
+        plt.imshow(img_i)
+    return fig
 
-    save_path_recon = os.path.join(args.save_folder, 'reconstruct')
-    save_path_generation = os.path.join(args.save_folder, 'generation')
-    os.makedirs(save_path_generation, exist_ok=True)
+
+
+def save_one_batch_img(args, data_loader, generator, encoder):
+    """Save a batch of img"""
+    # load data
+    img = next(iter(data_loader))
+    bsz = img.shape[0]
+    Nh = int(np.sqrt(bsz))
+    Nw = int(np.sqrt(bsz))
     # reconstruction
-    for batch_id, img in tqdm(enumerate(data_loader)):
-        bsz = img.shape[0]
-        with torch.no_grad():
-            latent_z = encoder(img)
-            recon_img_batch = generator(latent_z) # bsz, c, h, w
-        for index in range(bsz):
-            origin_img = img_from_batch(img[index]).convert('RGB')
-            recon_img = img_from_batch(recon_img_batch[index]).convert('RGB')
-            subfolder_name = 'batch_{}_index_{}'.format(batch_id, index)
-            img_save_folder = os.path.join(save_path_recon, subfolder_name)
-            os.makedirs(img_save_folder, exist_ok=True)
-            origin_img.save(os.path.join(img_save_folder, 'origin.png'))
-            recon_img.save(os.path.join(img_save_folder, 'reconstruct.png'))
-        break
+    with torch.no_grad():
+        latent_z = encoder(img)
+        recon_img_batch = generator(latent_z) # bsz, c, h, w
+    
     # generation
     sample_z = np.random.uniform(-1, 1, (args.batch_size, args.z_dim)) # their code exactly
     sample_z = torch.FloatTensor(sample_z)
     generate_img_batch = generator(sample_z).detach()
-    for index in range(generate_img_batch.shape[0]):
-        gene_img = img_from_batch(generate_img_batch[index]).convert('RGB')
-        gene_img.save(os.path.join(save_path_generation, '{}.png'.format(index)))
+
+    # save origin
+    fig_origin = plot_one_batch(img, Nh, Nw)
+    ttt='epoch_{}_original.png'.format(str(args.eval_epoch).zfill(3))
+    plt.savefig(os.path.join(args.save_folder, ttt), bbox_inches='tight')
+    plt.close(fig_origin)
+
+    # save reconstruct
+    fig_recon = plot_one_batch(recon_img_batch, Nh, Nw)
+    ttt='epoch_{}_reconstruct.png'.format(str(args.eval_epoch).zfill(3))
+    plt.savefig(os.path.join(args.save_folder, ttt), bbox_inches='tight')
+    plt.close(fig_recon)
+
+    # save generation
+    fig_gen = plot_one_batch(generate_img_batch, Nh, Nw)
+    ttt='epoch_{}_generation.png'.format(str(args.eval_epoch).zfill(3))
+    plt.savefig(os.path.join(args.save_folder, ttt), bbox_inches='tight')
+    plt.close(fig_gen)
+
     
-        
-def img_from_batch(input_tensor):
-    img = Image.fromarray(np.uint8(input_tensor.numpy()*255))
+def img_from_tensor(input_tensor):
+    img = Image.fromarray(np.transpose(np.uint8(input_tensor.numpy()*255), [1, 2, 0]))
     return img
-
-
-
 
 
 def main():
@@ -131,8 +166,11 @@ def main():
     generator = load_model(args, generator, 'generator')
 
     loader = set_loader(args)
-    save_batch_img(args, loader, generator, encoder)
+    save_one_batch_img(args, loader, generator, encoder)
 
 
 if __name__ == "__main__":
+    """Command:
+    $ python eval.py --generator_model_path --encoder_model_path
+    """
     main()
