@@ -45,7 +45,7 @@ def set_args():
                         help='batch_size')
     parser.add_argument('--parallel', action='store_true', help="true if using data parallel")
     parser.add_argument('--save_freq', type=int, default=10, help="save freq for models")
-    
+
     # loss weight
     parser.add_argument('--recon_weight', type=float, default=0.1,
                         help='reconstruction weight')
@@ -66,19 +66,19 @@ def set_args():
     # other
     parser.add_argument('--resume_model_path', type=str, default='0',
                     help='from with model training would resume')
-    
-    
+
+
     args = parser.parse_args()
 
     args.data_root_folder = os.path.join(args.data_folder, args.data_root_name)
     args.model_path = '../train_related/VisulConceptRouting/SparseVAEGAN/{}_models_'.format(args.dataset)
     args.tb_path = '../train_related/VisulConceptRouting/SparseVAEGAN/{}_tensorboard_'.format(args.dataset)
-    
+
     if args.resume_model_path != '0':
         args.pre_ssl_epoch = int(opt.resume_model_path.split('/')[-1].split('.')[0].split('_')[-1])
         args.model_path += '_resume_from_epoch_{}'.format(args.pre_ssl_epoch)
         args.tb_path += '_resume_from_epoch_{}'.format(args.pre_ssl_epoch)
-    
+
 
     args.model_name = '{}_recon_weight_{}_zdim_{}'.\
         format(args.dataset, args.recon_weight, args.z_dim)
@@ -86,7 +86,7 @@ def set_args():
     args.tb_folder = os.path.join(args.tb_path, args.model_name)
     if os.path.isdir(args.tb_folder):
         delete = input("Are you sure to delete folder {}？ (Y/n)".format(args.tb_folder))
-        if delete.lower() == 'y': 
+        if delete.lower() == 'y':
             shutil.rmtree(args.tb_folder)
         else:
             sys.exit("{} FOLDER is untorched.".format(args.tb_folder))
@@ -109,7 +109,7 @@ def gradient_penalty(real_data, generated_data, Critic, args):
     interpolated = Variable(interpolated, requires_grad=True)
     interpolated = interpolated.cuda()
     # Calculate probability of interpolated examples
-    prob_interpolated = Critic(interpolated) 
+    prob_interpolated = Critic(interpolated)
     # Calculate gradients of probabilities with respect to examples
     gradients = torch_grad(outputs=prob_interpolated, inputs=interpolated,
                            grad_outputs=torch.ones(prob_interpolated.size()).cuda(),
@@ -134,7 +134,7 @@ def set_loader(args):
                                     transform=train_transform)
     else:
         raise ValueError(args.dataset)
-    
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_workers, pin_memory=True)
@@ -175,7 +175,7 @@ def train_encoder_generator(train_loader, models, optim_encoder, optim_generator
     recon_losses = 0.0
     critic_losses = 0.0
     num_data = 0.0
-    for img in tqdm(enumerate(train_loader), total=len(train_loader)):
+    for batch_id, img in tqdm(enumerate(train_loader), total=len(train_loader)):
         img = img.cuda()
         num_data = img.shape[0]
         # encoder img to reconstruct
@@ -193,14 +193,14 @@ def train_encoder_generator(train_loader, models, optim_encoder, optim_generator
         loss.backward()
         optim_encoder.step()
         optim_generator.step()
-        
+
         recon_losses += reconstruct_loss.item()
         critic_losses += critic_loss.item()
 
     recon_losses = recon_losses / num_data
     critic_losses = critic_losses / num_data
     return recon_losses, critic_losses
-    
+
 
 def train_critic(train_loader, models, optim_critic, args):
     models.train()
@@ -214,7 +214,7 @@ def train_critic(train_loader, models, optim_critic, args):
             sample_z = np.random.uniform(-1, 1, (bzs, args.z_dim)) # their code exactly
             latent_z = Variable(torch.FloatTensor(sample_z), requires_grad=False).cuda()
             generated_img = models.generator(latent_z).detach()
-        
+
         fake_score = models.critic(generated_img)
         real_score = models.critic(img)
         # wGAN loss
@@ -226,7 +226,7 @@ def train_critic(train_loader, models, optim_critic, args):
 
         loss = loss_1 + loss_2 + loss_3
         losses += loss.item()
-        
+
         optim_critic.zero_grad()
         loss.backward()
         optim_critic.step()
@@ -252,7 +252,7 @@ def main():
     for epoch in range(1, args.epochs + 1):
         # train encoder and generator
         recon_losses, critic_losses = train_encoder_generator(train_loader, models, optim_encoder, optim_generator, l2_reconstruct_criterion, args)
-        
+
         # train critic
         train_critic_loss = train_critic(train_loader, models, optim_critic, args)
 
@@ -260,10 +260,10 @@ def main():
         tf_logger.log_value('recon_losses', recon_losses, epoch)
         tf_logger.log_value('critic_losses', critic_losses, epoch)
         tf_logger.log_value('train_critic_loss', train_critic_loss, epoch)
-        scalar_logger.log_value(epoch, ('recon_losses', recon_losses), 
+        scalar_logger.log_value(epoch, ('recon_losses', recon_losses),
                                        ('critic_losses', critic_losses),
                                        ('train_critic_loss', train_critic_loss))
-        
+
         if epoch % args.save_freq == 0 or epoch == args.epochs:
             save_model(models.encoder, optim_encoder, args, epoch, os.path.join(args.save_folder, 'ckpt_encoder_epoch_{}.ckpt'.format(epoch)))
             save_model(models.generator, optim_generator, args, epoch, os.path.join(args.save_folder, 'ckpt_generator_epoch_{}.ckpt'.format(epoch)))
