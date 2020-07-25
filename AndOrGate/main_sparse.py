@@ -1,11 +1,12 @@
 """
 Pytorch Implementation for Inducing Hierarchical Compositional Model by Sparsifying Generator Network. CVPR 2020.
 """
-import os
+import os, sys
 import argparse
 import numpy as np
 import shutil
 import multiprocessing
+
 
 from tqdm import tqdm
 import torch
@@ -174,7 +175,7 @@ def train_encoder_generator(train_loader, models, optim_encoder, optim_generator
     recon_losses = 0.0
     critic_losses = 0.0
     num_data = 0.0
-    for batch_id, img in tqdm(enumerate(train_loader), total=len(train_loader)):
+    for img in tqdm(enumerate(train_loader), total=len(train_loader)):
         img = img.cuda()
         num_data = img.shape[0]
         # encoder img to reconstruct
