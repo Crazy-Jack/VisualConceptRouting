@@ -187,9 +187,9 @@ def train_encoder_generator(train_loader, models, optim_encoder, optim_generator
         # final loss
         loss = reconstruct_loss * args.recon_weight + critic_loss
         # update
-        loss.backward()
         optim_encoder.zero_grad()
         optim_generator.zero_grad()
+        loss.backward()
         optim_encoder.step()
         optim_generator.step()
         
@@ -225,9 +225,9 @@ def train_critic(train_loader, models, optim_critic, args):
 
         loss = loss_1 + loss_2 + loss_3
         losses += loss.item()
-
-        loss.backward()
+        
         optim_critic.zero_grad()
+        loss.backward()
         optim_critic.step()
 
     losses = losses / num_data
