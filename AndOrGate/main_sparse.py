@@ -80,8 +80,8 @@ def set_args():
         args.tb_path += '_resume_from_epoch_{}'.format(args.pre_ssl_epoch)
 
 
-    args.model_name = '{}_recon_weight_{}_zdim_{}'.\
-        format(args.dataset, args.recon_weight, args.z_dim)
+    args.model_name = '{}_recon_weight_{}_zdim_{}_lrencode_{}_lrgene_{}_lrcritic_{}'.\
+        format(args.dataset, args.recon_weight, args.z_dim, args.lr_encoder, args.lr_generator, args.lr_critic)
 
     args.tb_folder = os.path.join(args.tb_path, args.model_name)
     if os.path.isdir(args.tb_folder):

@@ -120,6 +120,7 @@ def save_one_batch_img(args, data_loader, generator, encoder):
     """Save a batch of img"""
     # load data
     img = next(iter(data_loader))
+    print("img_batch ", img.shape)
     bsz = img.shape[0]
     Nh = int(np.sqrt(bsz))
     Nw = int(np.sqrt(bsz))
@@ -127,6 +128,7 @@ def save_one_batch_img(args, data_loader, generator, encoder):
     with torch.no_grad():
         latent_z = encoder(img)
         recon_img_batch = generator(latent_z) # bsz, c, h, w
+        print("recon_batch ", recon_img_batch.shape)
     
     # generation
     sample_z = np.random.uniform(-1, 1, (args.batch_size, args.z_dim)) # their code exactly
