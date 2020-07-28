@@ -463,7 +463,7 @@ with tf.Session(config=config) as sess:
                     mysaveimgori(os.path.join(figpath1, ttt2), Gyspaf[inb],CHANNELS,fmd[5],fmd[5])
 
 ############################################################
-    if 0:
+    if 1:
         #idp=53
         idp=46
         nbasis=20
@@ -481,11 +481,7 @@ with tf.Session(config=config) as sess:
         for inb in range(nbasis):
             ttt2='inb{}.png'.format(str(inb).zfill(3))
             mysaveimg(os.path.join(figpath1, ttt2),np.tanh(basislayerglobalp[idp,:,:,:,inb]),CHANNELS,fmd[5],fmd[5])
-
-
-
-
-    if 0:
+    if 1:
             idp=46
             #idp=73
             basislayerpartp=[]
@@ -513,7 +509,7 @@ with tf.Session(config=config) as sess:
 
 
             #########
-    if 0:
+    if 1:
             basislayerl2p=[]
             for ipp in range(64):
                 basislayerl2p1 = sess.run(basislayerl2,feed_dict={z_s: z_sp,ip:ipp})
@@ -559,7 +555,7 @@ with tf.Session(config=config) as sess:
             plt.savefig(os.path.join(figpath, ttt), bbox_inches='tight')
             plt.close(fig)
 ###########################################################
-    if 0:
+    if 1:
             #crop subbasis
         idp=73
         nbasis=400
@@ -604,8 +600,7 @@ with tf.Session(config=config) as sess:
             for inb in range(nbasis):
                 ttt2='page{}inb{}.png'.format(str(ipage).zfill(3),str(inb).zfill(3))
                 mysaveimg(os.path.join(figpath1, ttt2), basislayerl4localcrop1[inb],CHANNELS,int(xl+1),int(yl+1))
-
-    if 0:
+    if 1:
             #crop subbasis
         idp=73
         nbasis=400
@@ -650,8 +645,7 @@ with tf.Session(config=config) as sess:
             for inb in range(nbasis):
                 ttt2='page{}inb{}.png'.format(str(ipage).zfill(3),str(inb).zfill(3))
                 mysaveimg(os.path.join(figpath1, ttt2), basislayerl3localcrop1[inb],CHANNELS,int(xl+1),int(yl+1))
-
-    if 0:
+    if 1:
             #crop subbasis
         idp=53
 
@@ -704,8 +698,7 @@ with tf.Session(config=config) as sess:
                     for inb in range(np.minimum(nbasis,basislayerl2localcrop1.shape[0])):
                         ttt2='inb{}.png'.format(str(inb).zfill(3))
                         mysaveimg(os.path.join(figpath1, ttt2), basislayerl2localcrop1[inb],CHANNELS,int(xl+1),int(yl+1))
-
-    if 0:
+    if 1:
             #crop subbasis
         idp=53
 
