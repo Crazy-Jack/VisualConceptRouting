@@ -1,61 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu May 23 00:14:11 2019
-celeba64
-@author: andy
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 22 07:46:48 2019
-
-@author: andy
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Sun May 19 23:08:53 2019
-
-@author: dell
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 15 12:08:46 2019
-STL
-@author: andy
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May  6 11:56:48 2019
-sparse and res
-@author: andy
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May  3 08:11:44 2019
-
-@author: andy
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 30 03:49:46 2019
-without any norm
-@author: andy
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
 Created on Fri Apr 26 01:04:07 2019
 
 @author: andy
@@ -94,13 +39,12 @@ from utils.imgpross import plothist
 import time
 from tqdm import tqdm
 
-dir = os.path.dirname(os.path.realpath(__file__))
+dir = '/user_data/tianqinl'
 #datapath='/home/andy/Downloads/lsun-master/Bedroom100K'
 #datapath='/home/andy/Documents/car/resized'
 #datapath='./Dataset/stlimgall'
-datapath=['../data_unzip/bedroom_train_lmdb/lsun_bed100k/imgs',]
 special='SparsegeneratorAEadv10k64ResnonormandzCelebA'
-dataname='mylsunbed100k64+deepfashion'
+dataname='deepfashion_only'
 figpath=dir+'/Results/'+dataname+'/'+'figures'+special+'/'
 logpath=dir+'/Results/'+dataname+'/'
 parampath=dir+'/Results/'+dataname+'/'+'params'+special+'/'
@@ -116,13 +60,12 @@ Nbatch= int(np.floor(Nall/BATCH_SIZE))
 Nall=int(Nbatch*BATCH_SIZE)
 Nepoch=2000
 
-bedroom_pathlist = [os.path.join(datapath[0], i) for i in os.listdir(datapath[0])]
 deepfashion_data_folder = "/user_data/tianqinl/"
 #deepfashion_index_file = "deepfashion50k.txt"
 deepfashion_index_file = "listoffiles.txt"
 deepfashion_index_file = pd.read_csv(os.path.join(deepfashion_data_folder, deepfashion_index_file), header=None)
 deepfashion_pathlist = [os.path.join(deepfashion_data_folder, i) for i in list(deepfashion_index_file.iloc[:,0])]
-datapathlist = deepfashion_pathlist + bedroom_pathlist
+datapathlist = deepfashion_pathlist
 print(datapathlist)
 train_set = LoadDataSet(datapathlist, im_size=[IMG_HEIGHT,IMG_WIDTH,CHANNELS],mode=2)
 tf.reset_default_graph()

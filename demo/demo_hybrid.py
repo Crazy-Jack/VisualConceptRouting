@@ -94,7 +94,7 @@ from utils.imgpross import plothist
 import time
 from tqdm import tqdm
 
-dir = os.path.dirname(os.path.realpath(__file__))
+dir = '/user_data/tianqinl'
 #datapath='/home/andy/Downloads/lsun-master/Bedroom100K'
 #datapath='/home/andy/Documents/car/resized'
 #datapath='./Dataset/stlimgall'

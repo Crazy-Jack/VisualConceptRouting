@@ -8,10 +8,12 @@ import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
 from matplotlib import cm
 import scipy.misc
+import imageio
+from skimage import img_as_ubyte
 def imnormalzo(image,channel):
 #    for ch in range(channel):
 #        image[:,:,ch]= (image[:,:,ch]-(image[:,:,ch]).min())/(
-#                (image[:,:,ch]).max()-(image[:,:,ch]).min()) 
+#                (image[:,:,ch]).max()-(image[:,:,ch]).min())
     if channel==1:
         immin=(image[:,:]).min()
         immax=(image[:,:]).max()
@@ -45,17 +47,19 @@ def plot(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
             plt.imshow(image,cmap=plt.cm.gray)
         else:
             plt.imshow(image)
-    return fig 
+    return fig
 def mysaveimg(filename,mat,channel,IMG_HEIGHT, IMG_WIDTH):
     image=mat.reshape(IMG_HEIGHT, IMG_WIDTH,channel)
     image=imnormalzo(image,channel)
-    #image = image.resize(im_size[0:2],Image.LANCZOS)    
-    scipy.misc.imsave(filename, image)
+    #image = image.resize(im_size[0:2],Image.LANCZOS)
+    # scipy.misc.imsave(filename, image)
+    imageio.imwrite(filename, img_as_ubyte(image))
 
 def mysaveimgori(filename,mat,channel,IMG_HEIGHT, IMG_WIDTH):
-    image=mat.reshape(IMG_HEIGHT, IMG_WIDTH,channel)  
-    scipy.misc.imsave(filename, image)
-    
+    image=mat.reshape(IMG_HEIGHT, IMG_WIDTH,channel)
+    # scipy.misc.imsave(filename, image)
+    imageio.imwrite(filename, img_as_ubyte(image))
+
 def plotnorm(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
     fig = plt.figure(figsize=(10, 10))
     #fig = plt.figure()
@@ -79,7 +83,7 @@ def plotnorm(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
             plt.imshow(image,cmap=plt.cm.gray)
         else:
             plt.imshow(image)
-    return fig 
+    return fig
 
 def plotnorm1(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
     fig = plt.figure(figsize=(20, 10))
@@ -104,7 +108,7 @@ def plotnorm1(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
             plt.imshow(image,cmap=plt.cm.gray)
         else:
             plt.imshow(image)
-    return fig 
+    return fig
 
 def plot1(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
     fig = plt.figure(figsize=(20, 10))
@@ -129,7 +133,7 @@ def plot1(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
             plt.imshow(image,cmap=plt.cm.gray)
         else:
             plt.imshow(image)
-    return fig 
+    return fig
 
 
 def plotonesave(samples,channel,IMG_HEIGHT, IMG_WIDTH,savepath,name):
@@ -151,9 +155,9 @@ def plotonesave(samples,channel,IMG_HEIGHT, IMG_WIDTH,savepath,name):
         #image=(image+1)/2
         image=imnormalzo(image,channel)
         plt.imshow(image)
-        
+
         plt.savefig(os.path.join(savepath, name), bbox_inches='tight')
-    plt.close(fig)   
+    plt.close(fig)
 
 def plotfilter1(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
     fig = plt.figure(figsize=(20, 20))
@@ -174,7 +178,7 @@ def plotfilter1(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
             image=sample.reshape(IMG_HEIGHT, IMG_WIDTH,channel)
             image=imnormalzo(image,channel)
             plt.imshow(image)
-    return fig 
+    return fig
 
 def plotfilter(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
     fig = plt.figure(figsize=(20, 10))
@@ -195,4 +199,4 @@ def plotfilter(samples,Nh,Nc,channel,IMG_HEIGHT, IMG_WIDTH):
             image=sample.reshape(IMG_HEIGHT, IMG_WIDTH,channel)
             image=imnormalzo(image,channel)
             plt.imshow(image)
-    return fig 
+    return fig
