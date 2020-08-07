@@ -45,7 +45,7 @@ def LoadDataSet_condition(pathlist, im_size, class_num, mode):
     print("Loading dataset...")
     for i in tqdm(xrange(len(imgList))):
         path, category = imgList[i]
-        labels[i][category] = 1.0
+        labels[i, category] = 1.0
         if im_size[2]==3:
             image = Image.open(path).convert('RGB')
             image = image.resize(im_size[0:2],Image.LANCZOS)
