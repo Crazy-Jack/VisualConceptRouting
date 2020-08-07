@@ -29,6 +29,8 @@ from tqdm import tqdm
 
 dir = '/user_data/tianqinl'
 
+layer_condition = False
+
 #datapath='/home/andy/Downloads/lsun-master/Bedroom100K'
 #datapath='/home/andy/Documents/car/resized'
 #datapath='./Dataset/stlimgall'
