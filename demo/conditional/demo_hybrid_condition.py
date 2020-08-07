@@ -29,7 +29,7 @@ from tqdm import tqdm
 
 dir = '/user_data/tianqinl'
 
-layer_condition = False
+layer_condition = True
 
 #datapath='/home/andy/Downloads/lsun-master/Bedroom100K'
 #datapath='/home/andy/Documents/car/resized'
@@ -214,7 +214,7 @@ with tf.Session(config=config) as sess:
         adam_vars += [g for g in g_list if 'Adam' in g.name]
         adam_vars += [g for g in g_list if 'beta2_power' in g.name]
         var_list += adam_vars
-        print('var_list:',var_list)
+        # print('var_list:',var_list)
     saver = tf.train.Saver(max_to_keep=50)
     tf.get_default_graph().finalize()
     lr_dp=7e-4
@@ -248,6 +248,8 @@ with tf.Session(config=config) as sess:
             #Yp=localCN_v2(Ypori)
             Yp=Ypori
             z_sp = np.random.uniform(-1,1,(BATCH_SIZE, z_dim))
+            # print("batch_labels: ", batch_labels.shape)
+            # print("batch_labels type: ", batch_labels.dtype)
 
             #opdesrun=[optimizerD,lossd,GP,DReg,energy_real,energy_syn,lossg,DgradNorm]
             opdesrun=[optimizerD,lossd,GP,DReg,energy_real,energy_syn,lossg]
@@ -257,7 +259,7 @@ with tf.Session(config=config) as sess:
             _,lossgp2,recons_lossp=sess.run([optimizerIG,lossg,recons_loss],feed_dict={Y: Yp,lr:lr_p,z_s:z_sp, lbls: batch_labels})
 
 
-            Gypaf,Gyspaf = sess.run([Gyr,Gys],feed_dict={Y: Yp,z_s:z_sp})
+            Gypaf,Gyspaf = sess.run([Gyr,Gys],feed_dict={Y: Yp,z_s:z_sp, lbls: batch_labels})
             Recons_loss=Recons_loss+recons_lossp/Nbatch
             Lossd=Lossd+lossdp/Nbatch
             Gp=Gp+GPp/Nbatch
