@@ -152,7 +152,7 @@ Train EBM
 real_score=descriptor(Y)
 energy_real=-tf.reduce_mean(real_score)
 #Gys = P(tf.reshape(z_s,[-1,1,1,z_dim]))
-Gys = P(z_s, lbls)
+Gys = P(z_s, lbls, layer_condition=layer_condition)
 syn_score=descriptor(tf.stop_gradient(Gys),reuse=True)
 energy_syn=-tf.reduce_mean(syn_score)
 lossd=tf.subtract(energy_real,energy_syn)
@@ -184,7 +184,7 @@ Train I and G
 beta=0.1
 za = Q(Y) # encoder
 
-Gyr = P(za,reuse=True) # generate
+Gyr = P(za, lbls, reuse=True, layer_condition=layer_condition) # generate
 recons_loss = (tf.nn.l2_loss(Gyr - Y))/(BATCH_SIZE)*2
 
 fgz=descriptor(Gys,reuse=True)
